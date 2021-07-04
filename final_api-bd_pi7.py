@@ -11,6 +11,9 @@ warnings.filterwarnings("ignore")
 
 id_pel = "4314407"
 
+sensorA = "0"
+sensorB = "0"
+
 def buscar_dados(id):
 	request = requests.get(f"https://apiprevmet3.inmet.gov.br/previsao/{id}")
 	todo = json.loads(request.content)
@@ -37,6 +40,8 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
 
+	global sensorA, sensorB
+
 	print(msg.topic+" "+str(msg.payload))
 
 	temp_max, temp_min = buscar_dados(id_pel)
@@ -46,7 +51,7 @@ def on_message(client, userdata, msg):
 	sensor = dados_python['id']
 	value = dados_python['data']
 
-	data = datetime.datetime.now().strftime("%d/%m/%Y")
+	data = datetime.datetime.now().strftime("%d/%m/%Y - %H:%M:%S")
 	hora = datetime.datetime.now().timestamp()
 	print (data)
 
@@ -66,17 +71,45 @@ def on_message(client, userdata, msg):
 	insertline = """INSERT INTO icaro (id, name,  sens_val,  prev_min, prev_max, time_pub, date_pub) VALUES (%s, %s, %s, %s, %s, %s, %s);"""
 
 	if (sensor == "PROJ-INT"):
-		w_sensor_id = 1
+		sensor_id = 1
+		sensorA = value
 	elif (sensor == "PROJ-INT-2"):
-		w_sensor_id = 2
+		sensor_id = 2
+		sensorB = value
 
-	values = (w_sensor_id, sensor, value, temp_min, temp_max, hora, data)
+	values = (sensor_id, sensor, value, temp_min, temp_max, hora, data)
 
 	cur.execute(insertline, values)
 
 	con.commit()
 	con.close()
 
+	arquivo = open("/var/www/html/icaro.html", "w")
+	arquivo.close()
+	arquivo = open("/var/www/html/icaro.html", "a")
+
+	linha1 = "<!DOCTYPE html>" + " \n" + "<html>" + " \n" + "  <head>" + " \n" + "    <meta charset='utf-8'>" + " \n" + "    <title>Temperatura Pelotas</title>" + " \n" + "    <meta http-equiv='refresh' content='60'>" + " \n" + "  </head>" + " \n" + "  <body>" + " \n" + "<h2>Mediçoes de sensores e Temperaturas Previstas</h2>" + " \n"
+	arquivo.write(linha1)
+
+	linha_arq = "<p>PROJ-INT: " + sensorA + " </p>\n"
+	arquivo.write(linha_arq)
+
+	linha_arq = "<p>PROJ-INT-2: " + sensorB + " </p>\n"
+	arquivo.write(linha_arq)
+
+	linha_arq = "<p>Pel. Máxima: " + "%d"%temp_max + " </p>\n"
+	arquivo.write(linha_arq)
+
+	linha_arq = "<p>Pel. Minima: " + "%d"%temp_min + " </p>\n"
+	arquivo.write(linha_arq)
+
+	linha_arq = "  </body>" + " \n"
+	arquivo.write(linha_arq)
+
+	linhaf = "</html>" + " \n"
+	arquivo.write(linhaf)
+
+	arquivo.close()
 
 client = mqtt.Client()
 client.on_connect = on_connect
