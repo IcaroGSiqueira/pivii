@@ -13,6 +13,18 @@ import requests
 
 id_sls = "4318804"
 
+warnings.filterwarnings("ignore")
+
+tam = 600
+sleep = 30
+
+client = mqtt.Client()
+
+client.username_pw_set("proj7", mqtt_pass.passw)
+#client.username_pw_set("p2afib024psu", "FCei9AVHzLTp") #test
+
+client.connect("142.47.103.158", 1883)
+
 def buscar_dados(id):
 	request = requests.get(f"https://apiprevmet3.inmet.gov.br/previsao/{id}")
 	todo = json.loads(request.content)
@@ -32,19 +44,6 @@ def buscar_dados(id):
 	temp_min = todo['%s'%id]['%s'%date]['%s'%preiod]['temp_min']
 
 	return(temp_max, temp_min)
-
-
-warnings.filterwarnings("ignore")
-
-tam = 600
-sleep = 30
-
-client = mqtt.Client()
-
-client.username_pw_set("proj7", mqtt_pass.passw)
-#client.username_pw_set("p2afib024psu", "FCei9AVHzLTp") #test
-
-client.connect("142.47.103.158", 1883)
 
 for i in range(tam):
 	cpu_temp =	psutil.sensors_temperatures(fahrenheit=False)

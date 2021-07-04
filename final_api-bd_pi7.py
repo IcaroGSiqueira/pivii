@@ -37,7 +37,6 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
 
-	global valor_C, valor_B, valor_A, ts_C, ts_B, ts_A
 	print(msg.topic+" "+str(msg.payload))
 
 	temp_max, temp_min = buscar_dados(id_pel)
@@ -47,8 +46,9 @@ def on_message(client, userdata, msg):
 	sensor = dados_python['id']
 	value = dados_python['data']
 
-	data_e_hora = datetime.datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
-	print (data_e_hora)
+	data = datetime.datetime.now().strftime("%d/%m/%Y")
+	hora = datetime.datetime.now().timestamp()
+	print (data)
 
 	message = sensor + " " + value + " " + str(int(time.time())) + "\n"
 	print ('Enviando ao BD Graphite: %s' % message)
@@ -61,21 +61,16 @@ def on_message(client, userdata, msg):
 	sock.sendall(message.encode('utf-8'))
 	sock.close()
 
-	con = psycopg2.connect(host='localhost', database='postgres', user='projeto', password='!int7@')
+	con = psycopg2.connect(host='localhost', database='postgres', user='projeto', password=mqtt_pass.passpost)
 	cur = con.cursor()
-	dt = datetime.now(timezone.utc)
-	insertline = """INSERT INTO icaro (id, name,  sens_val,  prev_min, prev_max, pub_date) VALUES (%s, %s, %s, %s, %s, %s);"""
+	insertline = """INSERT INTO icaro (id, name,  sens_val,  prev_min, prev_max, time_pub, date_pub) VALUES (%s, %s, %s, %s, %s, %s, %s);"""
 
 	if (sensor == "PROJ-INT"):
 		w_sensor_id = 1
 	elif (sensor == "PROJ-INT-2"):
 		w_sensor_id = 2
 
-	w_sensor_name = sensor
-	w_pub_date = data_e_hora
-	w_sensor_value = value
-
-	values = (w_sensor_id, w_sensor_name, w_sensor_value, temp_min, temp_max, w_pub_date)
+	values = (w_sensor_id, sensor, value, temp_min, temp_max, hora, data)
 
 	cur.execute(insertline, values)
 
