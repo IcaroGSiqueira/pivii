@@ -10,7 +10,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 id_pel = "4314407"
-
 sensorA = "0"
 sensorB = "0"
 
